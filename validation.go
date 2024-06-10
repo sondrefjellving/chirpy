@@ -2,73 +2,74 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 )
 
-type errorBody struct {
-	Error string `json:"error"`
-}
-
-type reqBody struct {
-	Body string `json:"body"`
-}
-
-type success struct {
-	CleanedBody string `json:"cleaned_body"`
-}
 
 func handlerValidateChirpPost(w http.ResponseWriter, req *http.Request) {
+	type reqBody struct {
+		Body string `json:"body"`
+	}
+	type validRes struct {
+		CleanedBody string `json:"cleaned_body"`
+	}
+
 	decoder := json.NewDecoder(req.Body)
-	res := reqBody{}
-	err := decoder.Decode(&res)
-
-	var	errorRes errorBody
-	if err != nil {
-		errorRes = errorBody{Error: "Something went wrong"}
-	}
-
-	if len(res.Body) > 140 {
-		errorRes = errorBody{Error: "Chirp is too long"}
-	}
+	reqData := reqBody{}
+	err := decoder.Decode(&reqData)
 
 	w.Header().Add("Content-Type", "application/json")
-	if errorRes.Error != "" {
-		data, err := json.Marshal(errorRes)
-		if err != nil {
-			fmt.Println("couldn't process request")
-			return
-		}
+	if err != nil {
+		respondWithError(w, 500, "Something went wrong")
+	}
 
-		w.WriteHeader(http.StatusBadRequest)	
-		w.Write(data)
+	if len(reqData.Body) > 140 {
+		respondWithError(w, 500, "Chirp is too long")
+	}
+
+	swearWordsCheck(&reqData.Body)
+	res := validRes{CleanedBody: reqData.Body}
+	respondWithJson(w, 400, res)
+}
+
+func respondWithJson(w http.ResponseWriter, status int, payload interface{}) {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		respondWithError(w, 500, "Error decoding message")
 		return
 	}
 
-	res.Body = swearWordsCheck(res.Body)
-
-	validRes := success{CleanedBody: res.Body}
-	data, err := json.Marshal(validRes)
-	if err != nil {
-			fmt.Println("couldn't process request")
-			return
-	}
-
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 	w.Write(data)
 }
 
-func swearWordsCheck(body string) string {
+func respondWithError(w http.ResponseWriter, status int, message string) {
+	type errorResponse struct {
+		Error string `json:"error"`
+	}	
+
+	response := errorResponse{Error: message}
+	data, err := json.Marshal(&response)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error decoding error message"))
+		return
+	}
+	w.WriteHeader(status)	
+	w.Write(data)
+}
+
+func swearWordsCheck(body *string) {
 	replacement := "****"
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
-	words := strings.Fields(body)
-	for i, _ := range words {
+	words := strings.Fields(*body)
+	for i := range words {
 		for _, w := range badWords {
 			if strings.ToLower(words[i]) == w {
 				words[i] = replacement
 			}
 		}
 	}
-	return strings.Join(words, " ")
+	*body = strings.Join(words, " ")
 }
