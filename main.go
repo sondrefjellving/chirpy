@@ -18,7 +18,7 @@ func main() {
 	path := "database.json"
 	db, err := database.NewDB(path)
 	if err != nil {
-		fmt.Println("Error creating db")
+		log.Fatal("Error creating db")
 		return
 	}
 	mux := http.NewServeMux()

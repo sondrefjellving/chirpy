@@ -8,21 +8,6 @@ import (
 )
 
 
-func (cfg *apiConfig) handlerChirpGet(w http.ResponseWriter, req *http.Request) {
-	chirps, err := cfg.db.GetChirps()
-	w.Header().Add("Content-Type", "application/json")
-	if err != nil {
-		respondWithError(w, 500, "Couldn't retrieve chirps")
-	}
-
-	chirpsAsJson, err := json.Marshal(chirps)
-	if err != nil {
-		respondWithError(w, 500, "Couldn't convert chirps to json format")
-	}
-
-	w.Write(chirpsAsJson)
-}
-
 func (cfg *apiConfig) handlerChirpPost(w http.ResponseWriter, req *http.Request) {
 	type reqBody struct {
 		Body string `json:"body"`
@@ -50,33 +35,6 @@ func (cfg *apiConfig) handlerChirpPost(w http.ResponseWriter, req *http.Request)
 	}
 
 	respondWithJson(w, 201, chirpRes)
-}
-
-func respondWithJson(w http.ResponseWriter, status int, payload interface{}) {
-	data, err := json.Marshal(payload)
-	if err != nil {
-		respondWithError(w, 500, "Error decoding message")
-		return
-	}
-
-	w.WriteHeader(status)
-	w.Write(data)
-}
-
-func respondWithError(w http.ResponseWriter, status int, message string) {
-	type errorResponse struct {
-		Error string `json:"error"`
-	}	
-
-	response := errorResponse{Error: message}
-	data, err := json.Marshal(&response)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error decoding error message"))
-		return
-	}
-	w.WriteHeader(status)	
-	w.Write(data)
 }
 
 func swearWordsCheck(body *string) {
