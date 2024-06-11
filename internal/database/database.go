@@ -32,7 +32,7 @@ func NewDB(path string) (*DB, error) {
 }
 
 func (db *DB) CreateChirp(body string) (Chirp, error) {
-	dbStruct, err := db.loadDB()
+	dbStruct, err := db.LoadDB()
 	if err != nil {
 		return Chirp{}, err
 	}
@@ -76,7 +76,7 @@ func (db *DB) ensureDB() error {
 }
 
 func (db *DB) GetChirps() ([]Chirp, error) {
-	dbData, err := db.loadDB()
+	dbData, err := db.LoadDB()
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 	return chirps, nil
 }
 
-func (db *DB) loadDB() (DBStructure, error) {
+func (db *DB) LoadDB() (DBStructure, error) {
 	db.mux.Lock()
 	defer db.mux.Unlock()
 	

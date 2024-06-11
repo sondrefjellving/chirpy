@@ -24,7 +24,7 @@ func respondWithError(w http.ResponseWriter, status int, message string) {
 	response := errorResponse{Error: message}
 	data, err := json.Marshal(&response)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(status)
 		w.Write([]byte("Error decoding error message"))
 		return
 	}

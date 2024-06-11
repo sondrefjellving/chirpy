@@ -26,8 +26,8 @@ func (cfg *apiConfig) handlerChirpPost(w http.ResponseWriter, req *http.Request)
 		respondWithError(w, 500, "Chirp is too long")
 	}
 
-	swearWordsCheck(&reqData.Body)
-	chirpRes, err := cfg.db.CreateChirp(reqData.Body)
+	cleanedBody := getCleanBody(reqData.Body)
+	chirpRes, err := cfg.db.CreateChirp(cleanedBody)
 	if err != nil {
 		fmt.Println("error creating chirp:", err)
 		fmt.Println(chirpRes)
@@ -37,10 +37,10 @@ func (cfg *apiConfig) handlerChirpPost(w http.ResponseWriter, req *http.Request)
 	respondWithJson(w, 201, chirpRes)
 }
 
-func swearWordsCheck(body *string) {
+func getCleanBody(body string) string {
 	replacement := "****"
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
-	words := strings.Fields(*body)
+	words := strings.Fields(body)
 	for i := range words {
 		for _, w := range badWords {
 			if strings.ToLower(words[i]) == w {
@@ -48,5 +48,5 @@ func swearWordsCheck(body *string) {
 			}
 		}
 	}
-	*body = strings.Join(words, " ")
+	return strings.Join(words, " ")
 }
