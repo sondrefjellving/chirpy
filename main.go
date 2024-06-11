@@ -32,9 +32,12 @@ func main() {
 	mux.Handle("/assets", http.FileServer(http.Dir(".logo.png")))
 	mux.HandleFunc("GET /api/healthz", handlerReadinessGet)
 	mux.HandleFunc("/api/reset", cfg.handleReset)
+
 	mux.HandleFunc("POST /api/chirps", cfg.handlerChirpPost)
 	mux.HandleFunc("GET /api/chirps", cfg.handlerChirpGet)
 	mux.HandleFunc("GET /api/chirps/{chirpId}", cfg.handlerChirpGetById)
+
+	mux.HandleFunc("POST /api/users", cfg.handlerUserPost)
 
 	mux.HandleFunc("GET /admin/metrics", cfg.handlerServerHitsGet)
 	
