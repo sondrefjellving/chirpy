@@ -25,6 +25,7 @@ type DBStructure struct {
 func NewDB(path string) (*DB, error) {
 	DB := &DB{
 		path: path,
+		mux: &sync.Mutex{},
 	}
 
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
@@ -42,6 +43,7 @@ func NewDB(path string) (*DB, error) {
 func (db *DB) CreateChirp(body string) (Chirp, error) {
 	dbStruct, err := db.loadDB()
 	if err != nil {
+		fmt.Println("1")
 		return Chirp{}, err
 	}
 
@@ -49,13 +51,15 @@ func (db *DB) CreateChirp(body string) (Chirp, error) {
 		Body: body,
 	}
 
-	id := len(dbStruct.Chirps)
+	id := 1
 	for {
 		_, exists := dbStruct.Chirps[id]
 		if !exists {
 			chirp.Id = id
 			dbStruct.Chirps[id] = chirp 
+			break
 		}
+		id++
 	}
 
 	err = db.writeDB(dbStruct)
@@ -97,21 +101,29 @@ func (db *DB) loadDB() (DBStructure, error) {
 		return DBStructure{}, err 
 	}
 
+	db.mux.Lock()
+	defer db.mux.Unlock()
 	data, err := os.ReadFile(db.path)
 	if err != nil {
 		return DBStructure{}, err
 	}
 
 	dbStruct := DBStructure{}
-	err = json.Unmarshal(data, &dbStruct)
-	if err != nil {
-		return DBStructure{}, err
+	if len(data) != 0 {
+		err = json.Unmarshal(data, &dbStruct)
+		if err != nil {
+			return DBStructure{}, err
+		}
+		return dbStruct, nil
 	}
 
+	dbStruct.Chirps = make(map[int]Chirp)
 	return dbStruct, nil
 }
 
 func (db *DB) writeDB(dbStructure DBStructure) error {
+	db.mux.Lock()
+	defer db.mux.Unlock()
 	file, err := os.Create(db.path)
 	if err != nil {
 		return err
