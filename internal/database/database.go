@@ -55,6 +55,12 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 		return User{}, err
 	}
 
+	for _, user := range dbStruct.Users {
+		if user.Email == email {
+			return User{}, errors.New("user with that email already exists")
+		}
+	}
+
 	encryptedPW, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
 		return User{}, err
@@ -79,10 +85,41 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 
 	err = db.writeDB(dbStruct)
 	if err != nil {
-		return User{}, err 
+		return User{}, err
 	}
 	return user, nil
+}
 
+func (db *DB) UserLogin(email, password string) (UserDTO, error) {
+	dbStruct, err := db.LoadDB()
+	if err != nil {
+		return UserDTO{}, err
+	}
+
+	hasUser := false
+	user := User{}	
+	for _, currUser := range dbStruct.Users {
+		if currUser.Email == email {
+			user = currUser
+			hasUser = true
+			break
+		}
+	}
+	
+	if !hasUser {
+		return UserDTO{}, errors.New("found no user with that email")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return UserDTO{}, errors.New("entered password and saved password doesn't match")
+	}
+
+	userDTO := UserDTO{
+		Id: user.Id,
+		Email: user.Email,
+	}
+	return userDTO, nil
 }
 
 func (db *DB) CreateChirp(body string) (Chirp, error) {

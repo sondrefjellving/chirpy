@@ -43,6 +43,8 @@ func main() {
 	mux.HandleFunc("POST /api/users", cfg.handlerUserPost)
 
 	mux.HandleFunc("GET /admin/metrics", cfg.handlerServerHitsGet)
+
+	mux.HandleFunc("POST /api/login", cfg.handlerLoginPost)
 	
 	server := &http.Server{
 		Addr:			":8080",
