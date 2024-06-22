@@ -27,10 +27,14 @@ type DBStructure struct {
 	Users map[int]User `json:"users"`
 }
 
-func NewDB(path string) (*DB, error) {
+func NewDB(path string, debugMode *bool) (*DB, error) {
 	db := &DB{
 		path: path,
 		mux: &sync.RWMutex{},
+	}
+
+	if *debugMode {
+		return db, db.CreateDB()
 	}
 
 	err := db.ensureDB() 

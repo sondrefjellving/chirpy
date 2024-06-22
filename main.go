@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,8 +16,10 @@ type apiConfig struct {
 }
 
 func main() {
+	dbg := flag.Bool("debug", false, "Enable debug mode")
+	flag.Parse()
 	path := "database.json"
-	db, err := database.NewDB(path)
+	db, err := database.NewDB(path, dbg)
 	if err != nil {
 		log.Fatal("Error creating db")
 		return
