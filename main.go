@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/sondrefjellving/chirpy/internal/database"
 )
 
@@ -13,9 +15,16 @@ import (
 type apiConfig struct {
 	fileServerHits int
 	db *database.DB
+	jwtSecret string
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	jwtSecret := os.Getenv("JWT_SECRET")
+
 	dbg := flag.Bool("debug", false, "Enable debug mode")
 	flag.Parse()
 	path := "database.json"
@@ -24,10 +33,12 @@ func main() {
 		log.Fatal("Error creating db")
 		return
 	}
+
 	mux := http.NewServeMux()
 	cfg := apiConfig{
 		fileServerHits: 0,
 		db: db,
+		jwtSecret: jwtSecret,
 	}
 
 	handler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
