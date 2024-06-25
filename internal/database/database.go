@@ -91,6 +91,28 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 	return user, nil
 }
 
+func (db *DB) UpdateUser(id int, email, password string) (User, error) {
+	dbStruct, err := db.LoadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	user, ok := dbStruct.Users[id]
+	if !ok {
+		return User{}, os.ErrNotExist 
+	}
+
+	user.Email = email
+	user.Password = password
+	dbStruct.Users[id] = user
+	err = db.writeDB(dbStruct)
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
+}
+
 func (db *DB) UserLogin(email, password string) (UserDTO, error) {
 	dbStruct, err := db.LoadDB()
 	if err != nil {
