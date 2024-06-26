@@ -11,6 +11,7 @@ type User struct {
 	Id int `json:"id"`
 	Email string `json:"email"`
 	HashedPassword string `json:"hashed_password"`
+	RefreshToken string	`json:"refresh_token"`	
 }
 
 func (db *DB) CreateUser(email, hashedPassword string) (User, error) {

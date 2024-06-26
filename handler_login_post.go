@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	SECONDS_IN_DAY = 60 * 60 * 24
+	ACCESS_TOKEN_DURATION = 60 * 60
 )
 
 func (c *apiConfig) handlerLoginPost(w http.ResponseWriter, req *http.Request) {
 	type LoginData struct {
-		Password string `json:"password"`
+		Password string	`json:"password"`
 		Email string	`json:"email"`
 		Expires_in_seconds int `json:"expires_in_seconds"`
 	}
@@ -22,6 +22,7 @@ func (c *apiConfig) handlerLoginPost(w http.ResponseWriter, req *http.Request) {
 	type response struct {
 		User	
 		Token string `json:"token"`
+		RefreshToken string `json:"refresh_token`
 	}
 
 	decoder := json.NewDecoder(req.Body)
@@ -39,16 +40,16 @@ func (c *apiConfig) handlerLoginPost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	defaultExpiration := 60 * 60 * 24
-	if loginData.Expires_in_seconds == 0 {
-		loginData.Expires_in_seconds = defaultExpiration
-	} else if loginData.Expires_in_seconds > defaultExpiration {
-		loginData.Expires_in_seconds= defaultExpiration
+
+	accessToken, err := auth.MakeJWT(user.Id, c.jwtSecret, time.Duration(ACCESS_TOKEN_DURATION*time.Second))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "couldn't create JWT")
+		return
 	}
 
-	token, err := auth.MakeJWT(user.Id, c.jwtSecret, time.Duration(loginData.Expires_in_seconds)*time.Second)
+	refreshToken, err := c.db.GetRefreshToken(user.Id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't create JWT")
+		respondWithError(w, http.StatusInternalServerError, "couldn't create refresh token")
 		return
 	}
 	
@@ -58,6 +59,7 @@ func (c *apiConfig) handlerLoginPost(w http.ResponseWriter, req *http.Request) {
 			Id: user.Id,
 			Email: user.Email,
 		},
-		Token: token,
+		Token: accessToken,
+		RefreshToken: refreshToken,
 	}) // here...
 }
