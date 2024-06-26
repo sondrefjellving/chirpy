@@ -4,13 +4,23 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/sondrefjellving/chirpy/internal/database"
+	"github.com/sondrefjellving/chirpy/internal/auth"
 )
+
+type User struct {
+	Id       int    `json:"id"`
+	Email    string `json:"email"`
+	Password string `json:"-"`
+}
 
 func (cfg *apiConfig) handlerUserPost(w http.ResponseWriter, req *http.Request) {
 	type body struct {
 		Password string `json:"password"`
 		Email string `json:"email"`
+	}
+
+	type response struct {
+		User
 	}
 	decoder := json.NewDecoder(req.Body)
 	reqBody := body{}
@@ -21,14 +31,22 @@ func (cfg *apiConfig) handlerUserPost(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	user, err := cfg.db.CreateUser(reqBody.Email, reqBody.Password)
+	hashedPassword, err := auth.HashPassword(reqBody.Password)
 	if err != nil {
-		respondWithError(w, 500, "Trouble creating user")
+		respondWithError(w, 500, "trouble hashing password")
 		return
 	}
 
-	respondWithJson(w, 201, database.UserDTO{
-		Id: user.Id,
-		Email: user.Email,
+	user, err := cfg.db.CreateUser(reqBody.Email, hashedPassword)
+	if err != nil {
+		respondWithError(w, 500, "trouble creating user")
+		return
+	}
+
+	respondWithJson(w, http.StatusCreated, response{
+		User: User{
+			Id: user.Id,
+			Email: user.Email,
+		},
 	})
 }

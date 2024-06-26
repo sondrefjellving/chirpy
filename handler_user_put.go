@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/sondrefjellving/chirpy/internal/auth"
-	"github.com/sondrefjellving/chirpy/internal/database"
 )
 
 func (c *apiConfig) handlerUserPut(w http.ResponseWriter, req *http.Request) {
@@ -16,7 +15,7 @@ func (c *apiConfig) handlerUserPut(w http.ResponseWriter, req *http.Request) {
 	}
 
 	type response struct {
-		database.UserDTO
+		User
 	}
 
 	token, err := auth.GetBearerToken(req.Header)
@@ -42,20 +41,23 @@ func (c *apiConfig) handlerUserPut(w http.ResponseWriter, req *http.Request) {
 	hashedPassword, err := auth.HashPassword(params.Password)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "couldn't hash password")
+		return
 	}
 
 	userIDInt, err := strconv.Atoi(subject)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "couldn't parse user id")
+		return
 	}
 
-	user, err := c.db.UpdateUser(userIDInt, params.Email, params.Password)
+	user, err := c.db.UpdateUser(userIDInt, params.Email, hashedPassword)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "couldn't update user")
+		return
 	}
 
 	respondWithJson(w, http.StatusOK, response{
-		UserDTO: database.UserDTO{
+		User: User{
 			Id: user.Id,
 			Email: user.Email,
 		},

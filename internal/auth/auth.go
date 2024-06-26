@@ -2,8 +2,10 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -21,6 +23,18 @@ func HashPassword(password string) (string, error) {
 
 func CheckPasswordHash(pw, hash string) error {
 	return bcrypt.CompareHashAndPassword([]byte(pw), []byte(hash))
+}
+
+func MakeJWT(userID int, tokenSecret string, expiresIn time.Duration) (string, error) {
+	signingKey := []byte(tokenSecret)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Issuer:    "chirpy",
+		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
+		Subject:   fmt.Sprintf("%d", userID),
+	})
+	return token.SignedString(signingKey)
 }
 
 func ValidateJWT(tokenString, tokenSecret string) (string, error) {

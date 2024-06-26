@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 
-	"golang.org/x/crypto/bcrypt"
+	"github.com/sondrefjellving/chirpy/internal/auth"
 )
 
 type Chirp struct {
@@ -17,13 +17,7 @@ type Chirp struct {
 type User struct {
 	Id int `json:"id"`
 	Email string `json:"email"`
-	Password string `json:"password"`
-}
-
-type UserDTO struct {
-	Id int `json:"id"`
-	Email string `json:"email"`
-	Token string `json:"token"`
+	HashedPassword string `json:"hashed_password"`
 }
 
 type DB struct {
@@ -50,7 +44,7 @@ func NewDB(path string, debugMode *bool) (*DB, error) {
 	return db, err 
 }
 
-func (db *DB) CreateUser(email, password string) (User, error) {
+func (db *DB) CreateUser(email, hashedPassword string) (User, error) {
 	dbStruct, err := db.LoadDB()
 	if err != nil {
 		return User{}, err
@@ -62,27 +56,13 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 		}
 	}
 
-	encryptedPW, err := bcrypt.GenerateFromPassword([]byte(password), 10)
-	if err != nil {
-		return User{}, err
-	}
-
 	id := len(dbStruct.Chirps) + 1
 	user := User{
 		Email: email,
 		Id: id,
-		Password: string(encryptedPW),
+		HashedPassword: hashedPassword,
 	}
-
-	for {
-		_, exists := dbStruct.Users[id]
-		if !exists {
-			user.Id = id
-			dbStruct.Users[id] = user 
-			break
-		}
-		id++
-	}
+	dbStruct.Users[id] = user
 
 	err = db.writeDB(dbStruct)
 	if err != nil {
@@ -91,7 +71,7 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 	return user, nil
 }
 
-func (db *DB) UpdateUser(id int, email, password string) (User, error) {
+func (db *DB) UpdateUser(id int, email, hashedPassword string) (User, error) {
 	dbStruct, err := db.LoadDB()
 	if err != nil {
 		return User{}, err
@@ -103,8 +83,9 @@ func (db *DB) UpdateUser(id int, email, password string) (User, error) {
 	}
 
 	user.Email = email
-	user.Password = password
+	user.HashedPassword = hashedPassword 
 	dbStruct.Users[id] = user
+
 	err = db.writeDB(dbStruct)
 	if err != nil {
 		return User{}, err
@@ -113,14 +94,14 @@ func (db *DB) UpdateUser(id int, email, password string) (User, error) {
 	return user, nil
 }
 
-func (db *DB) UserLogin(email, password string) (UserDTO, error) {
+func (db *DB) UserLogin(email, hashedPassword string) (User, error) {
 	dbStruct, err := db.LoadDB()
 	if err != nil {
-		return UserDTO{}, err
+		return User{}, err
 	}
 
 	hasUser := false
-	user := User{}	
+	user := User{}
 	for _, currUser := range dbStruct.Users {
 		if currUser.Email == email {
 			user = currUser
@@ -130,19 +111,15 @@ func (db *DB) UserLogin(email, password string) (UserDTO, error) {
 	}
 	
 	if !hasUser {
-		return UserDTO{}, errors.New("found no user with that email")
+		return User{}, errors.New("found no user with that email")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	err = auth.CheckPasswordHash(user.HashedPassword, hashedPassword)
 	if err != nil {
-		return UserDTO{}, errors.New("entered password and saved password doesn't match")
+		return User{}, errors.New("entered password and saved password doesn't match")
 	}
 
-	userDTO := UserDTO{
-		Id: user.Id,
-		Email: user.Email,
-	}
-	return userDTO, nil
+	return user, nil
 }
 
 func (db *DB) CreateChirp(body string) (Chirp, error) {
