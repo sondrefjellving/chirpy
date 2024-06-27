@@ -54,10 +54,15 @@ func (db *DB) VerifyRefeshToken(token string) error {
 	if err != nil {
 		return err
 	}
-
-	if _, ok := dbStruct.RefreshTokens[token]; !ok {
+	entry, ok := dbStruct.RefreshTokens[token]
+	if !ok {
 		return errors.New("invalid token")
 	}
+
+	if entry.ExpiresAt.Before(time.Now()) {
+		return errors.New("token has expired")
+	}
+	
 	return nil
 }
 

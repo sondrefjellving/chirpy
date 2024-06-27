@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/sondrefjellving/chirpy/internal/auth"
 )
@@ -38,26 +39,26 @@ func (c *apiConfig) handlerRefresh(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	err = c.db.VerifyRefeshToken(token)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
 	userId, err := c.db.GetUserIdFromRefreshToken(token)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "invalid token")
 		return
 	}
-
-	refreshToken, err := auth.MakeRefreshToken()
+	hourDuration := time.Second * time.Duration(SECONDS_IN_HOUR)
+	accessToken, err := auth.MakeJWT(userId, c.jwtSecret, hourDuration)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "trouble creating refresh token")
 		return
 	}
 
-	err = c.db.SaveRefreshToken(userId, refreshToken, SECONDS_IN_HOUR)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "trouble adding refresh token to db")
-		return
-	}
-
 	res := response{
-		Token: refreshToken,
+		Token: accessToken,
 	}
 
 	respondWithJson(w, http.StatusOK, res)
