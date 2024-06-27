@@ -9,14 +9,13 @@ import (
 )
 
 const (
-	ACCESS_TOKEN_DURATION = 60 * 60
+	SECONDS_IN_60_DAYS = 60 * 60 * 24 * 60
 )
 
 func (c *apiConfig) handlerLoginPost(w http.ResponseWriter, req *http.Request) {
 	type LoginData struct {
 		Password string	`json:"password"`
 		Email string	`json:"email"`
-		Expires_in_seconds int `json:"expires_in_seconds"`
 	}
 
 	type response struct {
@@ -40,19 +39,24 @@ func (c *apiConfig) handlerLoginPost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-
-	accessToken, err := auth.MakeJWT(user.Id, c.jwtSecret, time.Duration(ACCESS_TOKEN_DURATION*time.Second))
+	accessToken, err := 
+		auth.MakeJWT(user.Id, c.jwtSecret, time.Duration(SECONDS_IN_HOUR*time.Second))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "couldn't create JWT")
 		return
 	}
 
-	refreshToken, err := c.db.GetRefreshToken(user.Id)
+	refreshToken, err := auth.MakeRefreshToken()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "couldn't create refresh token")
 		return
 	}
-	
+
+	err = c.db.SaveRefreshToken(user.Id, refreshToken, SECONDS_IN_60_DAYS)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "trouble saving refresh token to db")
+		return
+	}
 
 	respondWithJson(w, http.StatusOK, response{
 		User: User{

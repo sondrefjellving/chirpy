@@ -6,6 +6,10 @@ import (
 	"github.com/sondrefjellving/chirpy/internal/auth"
 )
 
+const (
+	SECONDS_IN_HOUR = 3600
+)
+
 func (c *apiConfig) handlerRevokeToken(w http.ResponseWriter, req *http.Request) {
 	token, err := auth.GetBearerToken(req.Header)
 	if err != nil {
@@ -34,19 +38,19 @@ func (c *apiConfig) handlerRefresh(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = c.db.VerifyRefeshToken(token)
+	userId, err := c.db.GetUserIdFromRefreshToken(token)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "invalid token")
 		return
 	}
 
-	refreshToken, err := auth.GenerateRefreshToken()
+	refreshToken, err := auth.MakeRefreshToken()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "trouble creating refresh token")
 		return
 	}
 
-	err = c.db.AddRefreshToken(refreshToken, 3600)
+	err = c.db.SaveRefreshToken(userId, refreshToken, SECONDS_IN_HOUR)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "trouble adding refresh token to db")
 		return

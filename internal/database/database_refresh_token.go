@@ -3,40 +3,50 @@ package database
 import (
 	"errors"
 	"time"
-
-	"github.com/sondrefjellving/chirpy/internal/auth"
 )
 
 const (
 	REFRESH_TOKEN_DURATION = 60*60*24*60 // 60 days in seconds, 60 seconds * 60 minutes * 24h in a day * 60 days
 )
 
-func (db *DB) GetRefreshToken(userId int) (string, error) {
+type RefreshToken struct {
+	UserId		int
+	ExpiresAt 	time.Time
+	Token		string
+}
+
+func (db *DB) GetUserIdFromRefreshToken(token string) (int, error) {
 	dbStruct, err := db.LoadDB()
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
-	token, err := auth.GenerateRefreshToken()
-	if err != nil {
-		return "", err
-	}
-
-	expiresAt := time.Now().Add(time.Duration(REFRESH_TOKEN_DURATION * time.Second))
-	dbStruct.RefreshTokens[token] = expiresAt
-
-	user, ok := dbStruct.Users[userId]
+	refreshToken, ok := dbStruct.RefreshTokens[token]
 	if !ok {
-		return "", errors.New("trouble finding user from db")
+		return 0, errors.New("invalid refresh token")
 	}
 
-	user.RefreshToken = token
-	dbStruct.Users[userId] = user
+	return refreshToken.UserId, nil
+}
+
+func (db *DB) SaveRefreshToken(userId int, token string, expiresInSeconds int) error {
+	dbStruct, err := db.LoadDB()
+	if err != nil {
+		return err
+	}
+
+	expiresAt := time.Now().Add(time.Second * time.Duration(expiresInSeconds))
+	dbStruct.RefreshTokens[token] = RefreshToken{
+		UserId: userId,
+		ExpiresAt: expiresAt,
+		Token: token,
+	}
 
 	if err := db.writeDB(dbStruct); err != nil {
-		return "", err
+		return err
 	}
-	return token, nil
+
+	return nil
 }
 
 func (db *DB) VerifyRefeshToken(token string) error {
@@ -51,20 +61,6 @@ func (db *DB) VerifyRefeshToken(token string) error {
 	return nil
 }
 
-func (db *DB) AddRefreshToken(token string, durationInSeconds int) error {
-	dbStruct, err := db.LoadDB()
-	if err != nil {
-		return err
-	}
-	expiresAt := time.Now().Add(time.Duration(time.Duration(durationInSeconds).Seconds()))
-	dbStruct.RefreshTokens[token] = expiresAt
-	if err := db.writeDB(dbStruct); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (db *DB) RevokeRefreshToken(token string) error {
 	dbStruct, err := db.LoadDB()
 	if err != nil {
@@ -76,7 +72,7 @@ func (db *DB) RevokeRefreshToken(token string) error {
 	}
 
 	delete(dbStruct.RefreshTokens, token)
-	
+
 	err = db.writeDB(dbStruct)
 	if err != nil {
 		return errors.New("touble writing to db")
