@@ -6,6 +6,23 @@ import (
 	"github.com/sondrefjellving/chirpy/internal/auth"
 )
 
+func (c *apiConfig) handlerRevokeToken(w http.ResponseWriter, req *http.Request) {
+	token, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		respondWithJson(w, http.StatusBadRequest, "invalid request")
+		return
+	}
+
+	err = c.db.RevokeRefreshToken(token)
+	if err != nil { // no such token in db
+		respondWithJson(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	respondWithJson(w, http.StatusNoContent, struct{}{})
+}
+
+
 func (c *apiConfig) handlerRefresh(w http.ResponseWriter, req *http.Request) {
 	type response struct {
 		Token string `json:"token"`

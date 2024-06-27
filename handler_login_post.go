@@ -22,7 +22,7 @@ func (c *apiConfig) handlerLoginPost(w http.ResponseWriter, req *http.Request) {
 	type response struct {
 		User	
 		Token string `json:"token"`
-		RefreshToken string `json:"refresh_token`
+		RefreshToken string `json:"refresh_token"`
 	}
 
 	decoder := json.NewDecoder(req.Body)

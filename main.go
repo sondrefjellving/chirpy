@@ -61,6 +61,7 @@ func main() {
 
 	// Refresh tokens
 	mux.HandleFunc("POST /api/refresh", cfg.handlerRefresh)
+	mux.HandleFunc("POST /api/revoke", cfg.handlerRevokeToken)
 	
 	server := &http.Server{
 		Addr:			":8080",

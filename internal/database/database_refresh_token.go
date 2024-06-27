@@ -64,3 +64,23 @@ func (db *DB) AddRefreshToken(token string, durationInSeconds int) error {
 
 	return nil
 }
+
+func (db *DB) RevokeRefreshToken(token string) error {
+	dbStruct, err := db.LoadDB()
+	if err != nil {
+		return err
+	}
+
+	if _, ok := dbStruct.RefreshTokens[token]; !ok {
+		return errors.New("invalid token")	
+	}
+
+	delete(dbStruct.RefreshTokens, token)
+	
+	err = db.writeDB(dbStruct)
+	if err != nil {
+		return errors.New("touble writing to db")
+	}
+
+	return nil
+}
