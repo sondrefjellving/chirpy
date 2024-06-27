@@ -1,10 +1,10 @@
 package database
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"time"
+
+	"github.com/sondrefjellving/chirpy/internal/auth"
 )
 
 const (
@@ -17,7 +17,7 @@ func (db *DB) GetRefreshToken(userId int) (string, error) {
 		return "", err
 	}
 
-	token, err := createRefreshToken()
+	token, err := auth.GenerateRefreshToken()
 	if err != nil {
 		return "", err
 	}
@@ -39,13 +39,28 @@ func (db *DB) GetRefreshToken(userId int) (string, error) {
 	return token, nil
 }
 
-func createRefreshToken() (refreshToken string, err error) {
-	randomBytes := make([]byte, 32)
-	_, err = rand.Read(randomBytes)
+func (db *DB) VerifyRefeshToken(token string) error {
+	dbStruct, err := db.LoadDB()
 	if err != nil {
-		return "", errors.New("couldn't get random string for refresh token") 
+		return err
 	}
 
-	refreshToken = hex.EncodeToString(randomBytes)
-	return refreshToken, nil
+	if _, ok := dbStruct.RefreshTokens[token]; !ok {
+		return errors.New("invalid token")
+	}
+	return nil
+}
+
+func (db *DB) AddRefreshToken(token string, durationInSeconds int) error {
+	dbStruct, err := db.LoadDB()
+	if err != nil {
+		return err
+	}
+	expiresAt := time.Now().Add(time.Duration(time.Duration(durationInSeconds).Seconds()))
+	dbStruct.RefreshTokens[token] = expiresAt
+	if err := db.writeDB(dbStruct); err != nil {
+		return err
+	}
+
+	return nil
 }
