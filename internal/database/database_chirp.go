@@ -1,9 +1,45 @@
 package database
 
+import "errors"
+
 type Chirp struct {
 	Id int `json:"id"`
 	AuthorId int `json:"author_id"`
 	Body string `json:"body"`	
+}
+
+func (db *DB) CheckIfUserIsOwnerOfChirp(userId, chirpId int) error {
+	dbStruct, err := db.LoadDB()
+	if err != nil {
+		return err
+	}
+	
+	chirp, ok := dbStruct.Chirps[chirpId]
+	if !ok {
+		return errors.New("couldn't find chirp with that id")
+	}
+
+	if chirp.AuthorId != userId {
+		return errors.New("user is not authorized to delete chirp with that id")
+	}
+	return nil
+}
+
+func (db *DB) DeleteChirpById(id int) error {
+	dbStruct, err := db.LoadDB()
+	if err != nil {
+		return err
+	}
+
+	if _, ok := dbStruct.Chirps[id]; !ok {
+		return errors.New("no chirp with that id")
+	}
+
+	delete(dbStruct.Chirps, id)
+	if err := db.writeDB(dbStruct); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (db *DB) CreateChirp(userId int, body string) (Chirp, error) {
