@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/sondrefjellving/chirpy/internal/auth"
 )
 
 const (
@@ -17,9 +19,21 @@ func (c *apiConfig) handlerPolkaWebhooks(w http.ResponseWriter, req *http.Reques
 		} `json:"data"`
 	}
 
+	apiKey, err := auth.GetAPIKey(req.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "invalid auth header")
+		return
+	}
+
+	err = auth.ValidateAPIKey(apiKey, c.polkaSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "invalid api key")
+		return
+	}
+
 	decoder := json.NewDecoder(req.Body)
 	parameters := params{}
-	err := decoder.Decode(&parameters)
+	err = decoder.Decode(&parameters)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "couldn't parse request data")
 		return

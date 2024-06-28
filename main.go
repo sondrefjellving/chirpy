@@ -16,6 +16,7 @@ type apiConfig struct {
 	fileServerHits int
 	db *database.DB
 	jwtSecret string
+	polkaSecret string
 }
 
 func main() {
@@ -24,6 +25,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	jwtSecret := os.Getenv("JWT_SECRET")
+	polkaSecret := os.Getenv("POLKA_SECRET")
 
 	dbg := flag.Bool("debug", false, "Enable debug mode")
 	flag.Parse()
@@ -39,6 +41,7 @@ func main() {
 		fileServerHits: 0,
 		db: db,
 		jwtSecret: jwtSecret,
+		polkaSecret: polkaSecret,
 	}
 
 	handler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
