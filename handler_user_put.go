@@ -60,6 +60,7 @@ func (c *apiConfig) handlerUserPut(w http.ResponseWriter, req *http.Request) {
 		User: User{
 			Id: user.Id,
 			Email: user.Email,
+			IsChirpyRed: user.IsChirpyRed,
 		},
 	})
 }

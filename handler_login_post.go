@@ -60,6 +60,7 @@ func (c *apiConfig) handlerLoginPost(w http.ResponseWriter, req *http.Request) {
 
 	respondWithJson(w, http.StatusOK, response{
 		User: User{
+			IsChirpyRed: user.IsChirpyRed,
 			Id: user.Id,
 			Email: user.Email,
 		},

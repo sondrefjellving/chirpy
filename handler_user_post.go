@@ -11,6 +11,7 @@ type User struct {
 	Id       int    `json:"id"`
 	Email    string `json:"email"`
 	Password string `json:"-"`
+	IsChirpyRed bool `json:"is_chirpy_red"`
 }
 
 func (cfg *apiConfig) handlerUserPost(w http.ResponseWriter, req *http.Request) {
@@ -47,6 +48,7 @@ func (cfg *apiConfig) handlerUserPost(w http.ResponseWriter, req *http.Request) 
 		User: User{
 			Id: user.Id,
 			Email: user.Email,
+			IsChirpyRed: user.IsChirpyRed,
 		},
 	})
 }
