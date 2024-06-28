@@ -2,10 +2,11 @@ package database
 
 type Chirp struct {
 	Id int `json:"id"`
+	AuthorId int `json:"author_id"`
 	Body string `json:"body"`	
 }
 
-func (db *DB) CreateChirp(body string) (Chirp, error) {
+func (db *DB) CreateChirp(userId int, body string) (Chirp, error) {
 	dbStruct, err := db.LoadDB()
 	if err != nil {
 		return Chirp{}, err
@@ -13,8 +14,9 @@ func (db *DB) CreateChirp(body string) (Chirp, error) {
 
 	id := len(dbStruct.Chirps) + 1
 	chirp := Chirp{
-		Body: body,
 		Id: id,
+		AuthorId: userId,
+		Body: body,
 	}
 
 	for {
