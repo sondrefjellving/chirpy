@@ -26,7 +26,7 @@ func (db *DB) CreateUser(email, hashedPassword string) (User, error) {
 		}
 	}
 
-	id := len(dbStruct.Chirps) + 1
+	id := 1
 	user := User{
 		Email: email,
 		Id: id,

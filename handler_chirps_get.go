@@ -3,11 +3,22 @@ package main
 import (
 	"net/http"
 	"strconv"
+
+	"github.com/sondrefjellving/chirpy/internal/database"
 )
 
 func (cfg *apiConfig) handlerChirpGet(w http.ResponseWriter, req *http.Request) {
+	id := req.URL.Query().Get("author_id")	
 	w.Header().Add("Content-Type", "application/json")
-	chirps, err := cfg.db.GetChirps()
+
+	chirps := make([]database.Chirp, 0)
+	var err error
+	if id == "" {
+		chirps, err = cfg.db.GetChirps()
+	} else {
+		chirps, err = cfg.db.GetChirpsWithAuthorId(id)
+	}
+
 	if err != nil {
 		respondWithError(w, 500, "Couldn't retrieve chirps")
 		return

@@ -1,6 +1,10 @@
 package database
 
-import "errors"
+import (
+	"errors"
+	"sort"
+	"strconv"
+)
 
 type Chirp struct {
 	Id int `json:"id"`
@@ -48,7 +52,7 @@ func (db *DB) CreateChirp(userId int, body string) (Chirp, error) {
 		return Chirp{}, err
 	}
 
-	id := len(dbStruct.Chirps) + 1
+	id := 1
 	chirp := Chirp{
 		Id: id,
 		AuthorId: userId,
@@ -72,6 +76,27 @@ func (db *DB) CreateChirp(userId int, body string) (Chirp, error) {
 	return chirp, nil
 }
 
+func (db *DB) GetChirpsWithAuthorId(authorId string) ([]Chirp, error) {
+	id, err := strconv.Atoi(authorId)
+	if err != nil {
+		return nil, err
+	}
+
+	dbData, err := db.LoadDB()
+	if err != nil {
+		return nil, err
+	}
+
+	chirps := make([]Chirp, 0, len(dbData.Chirps)) 
+	for _, chirp := range dbData.Chirps {
+		if chirp.AuthorId == id {
+			chirps = append(chirps, chirp)
+		}
+	}
+
+	return sortChirps(chirps), nil
+}
+
 func (db *DB) GetChirps() ([]Chirp, error) {
 	dbData, err := db.LoadDB()
 	if err != nil {
@@ -83,5 +108,12 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 		chirps = append(chirps, chirp)
 	}
 
-	return chirps, nil
+	return sortChirps(chirps), nil
+}
+
+func sortChirps(chirps []Chirp) []Chirp {
+	sort.Slice(chirps, func(i, j int) bool {
+		return chirps[i].Id < chirps[j].Id
+	})
+	return chirps
 }
