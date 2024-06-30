@@ -6,6 +6,10 @@ import (
 	"strconv"
 )
 
+const (
+	SORT_DESCENDING = "desc"
+)
+
 type Chirp struct {
 	Id int `json:"id"`
 	AuthorId int `json:"author_id"`
@@ -76,7 +80,7 @@ func (db *DB) CreateChirp(userId int, body string) (Chirp, error) {
 	return chirp, nil
 }
 
-func (db *DB) GetChirpsWithAuthorId(authorId string) ([]Chirp, error) {
+func (db *DB) GetChirpsWithAuthorId(authorId, sortParam string) ([]Chirp, error) {
 	id, err := strconv.Atoi(authorId)
 	if err != nil {
 		return nil, err
@@ -94,10 +98,10 @@ func (db *DB) GetChirpsWithAuthorId(authorId string) ([]Chirp, error) {
 		}
 	}
 
-	return sortChirps(chirps), nil
+	return sortChirps(chirps, sortParam), nil
 }
 
-func (db *DB) GetChirps() ([]Chirp, error) {
+func (db *DB) GetChirps(sortParam string) ([]Chirp, error) {
 	dbData, err := db.LoadDB()
 	if err != nil {
 		return nil, err
@@ -108,10 +112,17 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 		chirps = append(chirps, chirp)
 	}
 
-	return sortChirps(chirps), nil
+	return sortChirps(chirps, sortParam), nil
 }
 
-func sortChirps(chirps []Chirp) []Chirp {
+func sortChirps(chirps []Chirp, sortParam string) []Chirp {
+	if sortParam == SORT_DESCENDING {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].Id > chirps[j].Id
+		})
+		return chirps
+	}
+
 	sort.Slice(chirps, func(i, j int) bool {
 		return chirps[i].Id < chirps[j].Id
 	})

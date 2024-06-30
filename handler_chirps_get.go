@@ -9,14 +9,15 @@ import (
 
 func (cfg *apiConfig) handlerChirpGet(w http.ResponseWriter, req *http.Request) {
 	id := req.URL.Query().Get("author_id")	
+	sortParam := req.URL.Query().Get("sort")
 	w.Header().Add("Content-Type", "application/json")
 
 	chirps := make([]database.Chirp, 0)
 	var err error
 	if id == "" {
-		chirps, err = cfg.db.GetChirps()
+		chirps, err = cfg.db.GetChirps(sortParam)
 	} else {
-		chirps, err = cfg.db.GetChirpsWithAuthorId(id)
+		chirps, err = cfg.db.GetChirpsWithAuthorId(id, sortParam)
 	}
 
 	if err != nil {
