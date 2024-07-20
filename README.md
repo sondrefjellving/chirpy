@@ -1,5 +1,5 @@
 # Chirpy API
-This project was built using a guide from the [boot.dev](https://www.boot.dev) course.
+This project was built using a guide from [boot.dev](https://www.boot.dev).
 Chirpy is a social network where you can create a user, log in using its credentials and publish posts.
 
 ## Goal / Motivation
